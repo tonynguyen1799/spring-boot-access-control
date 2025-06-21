@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # The database service
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    # --- The KEY CHANGE for security ---
+    # We REMOVE the ports mapping. The database is no longer accessible from the host.
+    # ports:
+    #  - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=accesscontrol
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Attach the db service ONLY to the backend network
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # The application service
+  app:
+    build: .
+    container_name: access_control_app
+    ports:
+      - "8080:8080" # The app is still exposed to the host
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/accesscontrol?useSSL=false
+    # Attach the app service to both networks
+    networks:
+      - frontend-net
+      - backend-net
+
+# --- Define the custom networks here ---
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+
+volumes:
+  mysql_data:

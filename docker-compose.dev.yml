@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # The database service
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=accesscontrol
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # The application service
+  app:
+    build: .
+    container_name: access_control_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # --- The fix is on this line ---
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/accesscontrol?useSSL=false&allowPublicKeyRetrieval=true
+    networks:
+      - frontend-net
+      - backend-net
+
+# Define the custom networks
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+
+volumes:
+  mysql_data:

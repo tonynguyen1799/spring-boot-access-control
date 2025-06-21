@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="2" author="system">
+        <!-- Insert Roles -->
+        <insert tableName="roles">
+            <column name="id" value="1"/>
+            <column name="name" value="ROLE_USER"/>
+            <column name="text_id" valueComputed="UUID()"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueComputed="NOW()"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="id" value="2"/>
+            <column name="name" value="ROLE_MODERATOR"/>
+            <column name="text_id" valueComputed="UUID()"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueComputed="NOW()"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="id" value="3"/>
+            <column name="name" value="ROLE_ADMIN"/>
+            <column name="text_id" valueComputed="UUID()"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueComputed="NOW()"/>
+        </insert>
+
+        <!-- Link Roles to Privileges -->
+        <insert tableName="role_privileges"><column name="role_id" value="3"/><column name="privilege" value="ROLE_MANAGEMENT_READ"/></insert>
+        <insert tableName="role_privileges"><column name="role_id" value="3"/><column name="privilege" value="ROLE_MANAGEMENT_WRITE"/></insert>
+        <insert tableName="role_privileges"><column name="role_id" value="3"/><column name="privilege" value="USER_MANAGEMENT_READ"/></insert>
+        <insert tableName="role_privileges"><column name="role_id" value="3"/><column name="privilege" value="USER_MANAGEMENT_WRITE"/></insert>
+
+        <!-- Insert Users with a new, valid password hash for "password" -->
+        <insert tableName="users">
+            <column name="id" value="1"/>
+            <column name="username" value="user"/>
+            <column name="email" value="user@meta.com"/>
+            <column name="password" value="$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"/>
+            <column name="text_id" valueComputed="UUID()"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueComputed="NOW()"/>
+        </insert>
+        <insert tableName="users">
+            <column name="id" value="2"/>
+            <column name="username" value="mod"/>
+            <column name="email" value="mod@meta.com"/>
+            <column name="password" value="$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"/>
+            <column name="text_id" valueComputed="UUID()"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueComputed="NOW()"/>
+        </insert>
+        <insert tableName="users">
+            <column name="id" value="3"/>
+            <column name="username" value="admin"/>
+            <column name="email" value="admin@meta.com"/>
+            <column name="password" value="$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"/>
+            <column name="text_id" valueComputed="UUID()"/>
+            <column name="created_by" value="system"/>
+            <column name="created_at" valueComputed="NOW()"/>
+        </insert>
+
+        <!-- Link Users to Roles -->
+        <insert tableName="user_roles"><column name="user_id" value="1"/><column name="role_id" value="1"/></insert>
+        <insert tableName="user_roles"><column name="user_id" value="2"/><column name="role_id" value="2"/></insert>
+        <insert tableName="user_roles"><column name="user_id" value="3"/><column name="role_id" value="3"/></insert>
+    </changeSet>
+
+</databaseChangeLog>

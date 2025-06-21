@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <!-- Define properties for reuse, such as log paths and patterns -->
+    <Properties>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %c{1.}:%L - %m%n</Property>
+        <Property name="LOG_PATH">./logs</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Standard Console Appender for development and container logs -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <!-- Rolling File Appender: Writes logs to files and rotates them -->
+        <RollingFile name="RollingFile"
+                     fileName="${LOG_PATH}/access-control.log"
+                     filePattern="${LOG_PATH}/access-control-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout>
+                <Pattern>${LOG_PATTERN}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <!-- Rotate logs when they reach 10 MB in size -->
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+                <!-- Rotate logs daily -->
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+            <!-- Keep a maximum of 10 archived log files -->
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Root Logger: The default logger for the entire application -->
+        <!-- All loggers will inherit this configuration unless overridden -->
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Root>
+
+        <!-- Application-specific logger: Set a more detailed log level for your own code -->
+        <Logger name="com.meta.accesscontrol" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+
+        <!-- Control noisy third-party libraries -->
+        <Logger name="org.springframework" level="warn" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+        <Logger name="org.hibernate.SQL" level="warn" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+        <Logger name="org.apache.catalina.util" level="warn" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+    </Loggers>
+
+</Configuration>
