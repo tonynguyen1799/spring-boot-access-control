@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -13,48 +13,52 @@ import java.util.stream.Collectors;
 @Slf4j
 public final class PaginationUtils {
 
-    /**
-     * Private constructor to prevent instantiation of this utility class.
-     */
-    private PaginationUtils() {
-    }
+    private PaginationUtils() {}
 
-    /**
-     * Builds a list of Sort.Order objects from an array of sort parameters.
-     *
-     * @param sortParams An array of strings, where each string is a sort parameter (e.g., "username,asc").
-     * @return A list of Sort.Order objects.
-     */
-    public static List<Sort.Order> buildSortOrders(String[] sortParams) {
-        if (Objects.isNull(sortParams) || sortParams.length == 0) {
-            return Collections.emptyList();
-        }
+    public static List<Sort.Order> buildSortOrders(String[] sortParams, Sort.Order... additionalSorts) {
+        String[] normalized = normalizeSortPairs(sortParams);
 
-        return Arrays.stream(sortParams)
+        List<Sort.Order> orders = Arrays.stream(normalized)
                 .filter(StringUtils::hasText)
-                .map(PaginationUtils::parseSortOrder)
+                .map(PaginationUtils::parseCommaSeparatedOrder)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
+        if (additionalSorts != null) {
+            orders.addAll(Arrays.asList(additionalSorts));
+        }
+
+        return orders;
     }
 
-    /**
-     * Parses a single sort parameter string into a Sort.Order object.
-     *
-     * @param sortOrder The string to parse (e.g., "email,desc").
-     * @return A Sort.Order object, or null if the parameter is malformed.
-     */
-    private static Sort.Order parseSortOrder(String sortOrder) {
+    private static Sort.Order parseCommaSeparatedOrder(String raw) {
         try {
-            String[] sortParts = sortOrder.split(",");
-            String property = sortParts[0].trim();
-            if (property.isEmpty()) {
-                return null; // Ignore empty properties
-            }
-            Sort.Direction direction = sortParts.length > 1 ? Sort.Direction.fromString(sortParts[1].trim()) : Sort.Direction.ASC;
+            String[] parts = raw.split(",");
+            String property = parts[0].trim();
+            Sort.Direction direction = (parts.length > 1)
+                    ? Sort.Direction.fromString(parts[1].trim())
+                    : Sort.Direction.ASC;
             return new Sort.Order(direction, property);
         } catch (Exception e) {
-            log.warn("Ignoring invalid sort parameter: {}", sortOrder, e);
+            log.warn("Invalid sort format: {}", raw, e);
             return null;
         }
+    }
+
+    public static String[] normalizeSortPairs(String[] sort) {
+        if (sort == null || sort.length == 0) return new String[0];
+
+        // Already in correct format
+        if (sort.length == 1 && sort[0].contains(",")) return sort;
+
+        List<String> merged = new ArrayList<>();
+        for (int i = 0; i < sort.length; i += 2) {
+            if (i + 1 < sort.length) {
+                merged.add(sort[i] + "," + sort[i + 1]);
+            } else {
+                merged.add(sort[i]);
+            }
+        }
+        return merged.toArray(new String[0]);
     }
 }

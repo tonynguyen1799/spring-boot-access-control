@@ -1,7 +1,6 @@
 package com.meta.accesscontrol.controller.admin;
 
 import com.meta.accesscontrol.controller.admin.payload.*;
-import com.meta.accesscontrol.controller.payload.request.PaginationRequest;
 import com.meta.accesscontrol.controller.payload.response.JsonResponse;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
 import com.meta.accesscontrol.service.UserService;
@@ -20,8 +19,13 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public JsonResponse<PaginationResponse<UserDetailResponse>> getUsers(@Valid PaginationRequest paginationRequest, UserFilterRequest filterRequest) {
-        PaginationResponse<UserDetailResponse> users = userService.getUsers(paginationRequest, filterRequest);
+    public JsonResponse<PaginationResponse<UserDetailResponse>> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String[] sort,
+            @Valid UserFilterRequest filterRequest
+    ) {
+        PaginationResponse<UserDetailResponse> users = userService.getUsers(page, size, sort, filterRequest);
         return new JsonResponse<>(HttpStatus.OK.value(), "Users fetched successfully", users);
     }
 

@@ -3,7 +3,6 @@ package com.meta.accesscontrol.service;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UserDetailResponse;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
-import com.meta.accesscontrol.controller.payload.request.PaginationRequest;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
 import com.meta.accesscontrol.exception.DuplicateResourceException;
 import com.meta.accesscontrol.exception.ResourceNotFoundException;
@@ -38,18 +37,19 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public PaginationResponse<UserDetailResponse> getUsers(PaginationRequest paginationRequest, UserFilterRequest filterRequest) {
-        List<Sort.Order> orders = PaginationUtils.buildSortOrders(paginationRequest.getSort());
-        orders.add(Sort.Order.desc("updatedAt"));
+    public PaginationResponse<UserDetailResponse> getUsers(
+            int page,
+            int size,
+            String[] sort,
+            UserFilterRequest filterRequest) {
 
-        Pageable pageable = PageRequest.of(
-                paginationRequest.getPage(),
-                paginationRequest.getSize(),
-                Sort.by(orders)
+        List<Sort.Order> orders = PaginationUtils.buildSortOrders(
+                sort,
+                Sort.Order.desc("updatedAt")
         );
+        Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
 
-        UserSpecification spec = new UserSpecification(filterRequest);
-        Page<User> userPage = userRepository.findAll(spec, pageable);
+        Page<User> userPage = userRepository.findAll(new UserSpecification(filterRequest), pageable);
 
         return new PaginationResponse<>(userPage.map(UserDetailResponse::fromUser));
     }
