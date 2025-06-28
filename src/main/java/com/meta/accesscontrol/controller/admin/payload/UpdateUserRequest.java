@@ -2,8 +2,7 @@ package com.meta.accesscontrol.controller.admin.payload;
 
 import java.util.List;
 
-public record UserFilterRequest(
-        String search,
+public record UpdateUserRequest(
         List<String> roleTextIds,
         Boolean enabled
 ) {}

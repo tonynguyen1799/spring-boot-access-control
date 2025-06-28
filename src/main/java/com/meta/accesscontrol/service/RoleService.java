@@ -36,7 +36,7 @@ public class RoleService {
     }
 
     @Transactional(readOnly = true)
-    public RoleResponse getRoleByTextId(String textId) {
+    public RoleResponse getRole(String textId) {
         Role role = findRoleByTextId(textId);
         return RoleResponse.fromRole(role);
     }

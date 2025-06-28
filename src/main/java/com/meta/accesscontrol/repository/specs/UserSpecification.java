@@ -23,12 +23,13 @@ public class UserSpecification implements Specification<User> {
     public Predicate toPredicate(Root<User> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (StringUtils.hasText(filter.username())) {
-            predicates.add(cb.like(cb.lower(root.get("username")), "%" + filter.username().toLowerCase() + "%"));
-        }
-
-        if (StringUtils.hasText(filter.email())) {
-            predicates.add(cb.like(cb.lower(root.get("email")), "%" + filter.email().toLowerCase() + "%"));
+        if (StringUtils.hasText(filter.search())) {
+            String searchTerm = "%" + filter.search().toLowerCase() + "%";
+            Predicate searchPredicate = cb.or(
+                    cb.like(cb.lower(root.get("username")), searchTerm),
+                    cb.like(cb.lower(root.get("email")), searchTerm)
+            );
+            predicates.add(searchPredicate);
         }
 
         if (Objects.nonNull(filter.roleTextIds()) && !filter.roleTextIds().isEmpty()) {

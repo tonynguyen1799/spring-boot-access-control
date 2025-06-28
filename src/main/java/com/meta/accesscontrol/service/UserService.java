@@ -1,7 +1,8 @@
 package com.meta.accesscontrol.service;
 
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
-import com.meta.accesscontrol.controller.admin.payload.UserDetailResponse;
+import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
+import com.meta.accesscontrol.controller.admin.payload.UserResponse;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
 import com.meta.accesscontrol.exception.DuplicateResourceException;
@@ -15,6 +16,7 @@ import com.meta.accesscontrol.security.services.UserDetailsImpl;
 import com.meta.accesscontrol.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,8 +38,11 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.security.default-password}")
+    private String defaultPassword;
+
     @Transactional(readOnly = true)
-    public PaginationResponse<UserDetailResponse> getUsers(
+    public PaginationResponse<UserResponse> getUsers(
             int page,
             int size,
             String[] sort,
@@ -51,16 +56,16 @@ public class UserService {
 
         Page<User> userPage = userRepository.findAll(new UserSpecification(filterRequest), pageable);
 
-        return new PaginationResponse<>(userPage.map(UserDetailResponse::fromUser));
+        return new PaginationResponse<>(userPage.map(UserResponse::fromUser));
     }
 
     @Transactional(readOnly = true)
-    public UserDetailResponse getUserDetails(String textId) {
-        return UserDetailResponse.fromUser(findUserByTextId(textId));
+    public UserResponse getUser(String textId) {
+        return UserResponse.fromUser(findUserByTextId(textId));
     }
 
     @Transactional
-    public UserDetailResponse createUser(CreateUserRequest request) {
+    public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new DuplicateResourceException("Username is already taken!");
         }
@@ -68,29 +73,35 @@ public class UserService {
             throw new DuplicateResourceException("Email is already in use!");
         }
 
-        User user = new User(request.username(), request.email(), passwordEncoder.encode(request.password()));
+        User user = new User(request.username(), request.email(), passwordEncoder.encode(defaultPassword));
         assignRolesToUser(user, request.roleTextIds());
 
         User savedUser = userRepository.save(user);
-        return UserDetailResponse.fromUser(savedUser);
+        return UserResponse.fromUser(savedUser);
     }
 
     @Transactional
-    public UserDetailResponse updateUserRoles(String textId, List<String> roleTextIds) {
-        checkSelfModification(textId, "You cannot change your own roles.");
+    public UserResponse updateUser(String textId, UpdateUserRequest request) {
+        checkSelfModification(textId, "You cannot modify your own account details.");
         User user = findUserByTextId(textId);
-        assignRolesToUser(user, roleTextIds);
+
+        if (request.roleTextIds() != null) {
+            assignRolesToUser(user, request.roleTextIds());
+        }
+
+        if (request.enabled() != null) {
+            user.setEnabled(request.enabled());
+        }
+
         User updatedUser = userRepository.save(user);
-        return UserDetailResponse.fromUser(updatedUser);
+        return UserResponse.fromUser(updatedUser);
     }
 
     @Transactional
-    public UserDetailResponse updateUserStatus(String textId, boolean isEnabled) {
-        checkSelfModification(textId, "You cannot change the status of your own account.");
+    public void deleteUser(String textId) {
+        checkSelfModification(textId, "You cannot delete your own account.");
         User user = findUserByTextId(textId);
-        user.setEnabled(isEnabled);
-        User updatedUser = userRepository.save(user);
-        return UserDetailResponse.fromUser(updatedUser);
+        userRepository.delete(user);
     }
 
     private User findUserByTextId(String textId) {

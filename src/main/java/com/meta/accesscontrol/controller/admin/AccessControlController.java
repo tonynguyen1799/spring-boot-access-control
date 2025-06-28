@@ -10,7 +10,6 @@ import com.meta.accesscontrol.service.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,8 +31,8 @@ public class AccessControlController {
     }
 
     @GetMapping("/roles/{textId}")
-    public JsonResponse<RoleResponse> getRoleByTextId(@PathVariable String textId) {
-        RoleResponse role = roleService.getRoleByTextId(textId);
+    public JsonResponse<RoleResponse> getRole(@PathVariable String textId) {
+        RoleResponse role = roleService.getRole(textId);
         return new JsonResponse<>(HttpStatus.OK.value(), "Role fetched successfully", role);
     }
 

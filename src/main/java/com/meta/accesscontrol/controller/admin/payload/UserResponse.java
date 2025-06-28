@@ -6,7 +6,7 @@ import com.meta.accesscontrol.model.Role;
 import com.meta.accesscontrol.model.Privilege;
 import java.util.stream.Collectors;
 
-public record UserDetailResponse(
+public record UserResponse(
     String textId,
     String username,
     String email,
@@ -14,8 +14,8 @@ public record UserDetailResponse(
     List<String> roles,
     List<String> privileges
 ) {
-    public static UserDetailResponse fromUser(User user) {
-        return new UserDetailResponse(
+    public static UserResponse fromUser(User user) {
+        return new UserResponse(
                 user.getTextId(),
                 user.getUsername(),
                 user.getEmail(),

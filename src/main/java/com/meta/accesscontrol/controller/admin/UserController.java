@@ -19,41 +19,41 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public JsonResponse<PaginationResponse<UserDetailResponse>> getUsers(
+    public JsonResponse<PaginationResponse<UserResponse>> getUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String[] sort,
             @Valid UserFilterRequest filterRequest
     ) {
-        PaginationResponse<UserDetailResponse> users = userService.getUsers(page, size, sort, filterRequest);
+        PaginationResponse<UserResponse> users = userService.getUsers(page, size, sort, filterRequest);
         return new JsonResponse<>(HttpStatus.OK.value(), "Users fetched successfully", users);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('USER_MANAGEMENT_WRITE')")
-    public JsonResponse<UserDetailResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UserDetailResponse newUser = userService.createUser(request);
+    public JsonResponse<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        UserResponse newUser = userService.createUser(request);
         return new JsonResponse<>(HttpStatus.CREATED.value(), "User created successfully", newUser);
     }
 
     @GetMapping("/{textId}")
-    public JsonResponse<UserDetailResponse> getUserDetails(@PathVariable String textId) {
-        UserDetailResponse user = userService.getUserDetails(textId);
+    public JsonResponse<UserResponse> getUser(@PathVariable String textId) {
+        UserResponse user = userService.getUser(textId);
         return new JsonResponse<>(HttpStatus.OK.value(), "User details fetched successfully", user);
     }
 
-    @PutMapping("/{textId}/roles")
+    @PutMapping("/{textId}")
     @PreAuthorize("hasAuthority('USER_MANAGEMENT_WRITE')")
-    public JsonResponse<UserDetailResponse> updateUserRoles(@PathVariable String textId, @Valid @RequestBody UpdateUserRolesRequest request) {
-        UserDetailResponse updatedUser = userService.updateUserRoles(textId, request.roleTextIds());
-        return new JsonResponse<>(HttpStatus.OK.value(), "User roles updated successfully", updatedUser);
+    public JsonResponse<UserResponse> updateUser(@PathVariable String textId, @Valid @RequestBody UpdateUserRequest request) {
+        UserResponse updatedUser = userService.updateUser(textId, request);
+        return new JsonResponse<>(HttpStatus.OK.value(), "User updated successfully", updatedUser);
     }
 
-    @PutMapping("/{textId}/status")
+    @DeleteMapping("/{textId}")
     @PreAuthorize("hasAuthority('USER_MANAGEMENT_WRITE')")
-    public JsonResponse<UserDetailResponse> updateUserStatus(@PathVariable String textId, @Valid @RequestBody UpdateUserStatusRequest request) {
-        UserDetailResponse updatedUser = userService.updateUserStatus(textId, request.enabled());
-        return new JsonResponse<>(HttpStatus.OK.value(), "User status updated successfully", updatedUser);
+    public JsonResponse<Void> deleteUser(@PathVariable String textId) {
+        userService.deleteUser(textId);
+        return new JsonResponse<>(HttpStatus.OK.value(), "User deleted successfully", null);
     }
 }
