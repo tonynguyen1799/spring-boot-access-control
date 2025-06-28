@@ -30,8 +30,9 @@ services:
       db:
         condition: service_healthy
     environment:
-      # --- The fix is on this line ---
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/accesscontrol?useSSL=false&allowPublicKeyRetrieval=true
+      # --- ADD THIS LINE TO ACTIVATE THE DEV PROFILE ---
+      - SPRING_PROFILES_ACTIVE=dev
     networks:
       - frontend-net
       - backend-net
