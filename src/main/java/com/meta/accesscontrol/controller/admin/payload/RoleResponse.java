@@ -5,11 +5,12 @@ import com.meta.accesscontrol.model.Privilege;
 import com.meta.accesscontrol.model.Role;
 
 public record RoleResponse(
-    String textId,
-    String name,
-    Set<Privilege> privileges
+        String textId,
+        String name,
+        String description, // Reverted
+        Set<Privilege> privileges
 ) {
     public static RoleResponse fromRole(Role role) {
-        return new RoleResponse(role.getTextId(), role.getName(), role.getPrivileges());
+        return new RoleResponse(role.getTextId(), role.getName(), role.getDescription(), role.getPrivileges());
     }
 }

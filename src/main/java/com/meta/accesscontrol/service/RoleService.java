@@ -31,22 +31,23 @@ public class RoleService {
     @Transactional(readOnly = true)
     public List<RoleResponse> getRoles() {
         return roleRepository.findAll().stream()
-                .map(RoleResponse::fromRole)
+                .map(RoleResponse::fromRole) // Reverted to simple mapping
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public RoleResponse getRole(String textId) {
         Role role = findRoleByTextId(textId);
-        return RoleResponse.fromRole(role);
+        return RoleResponse.fromRole(role); // Reverted to simple mapping
     }
 
     @Transactional
     public RoleResponse createRole(CreateRoleRequest request) {
-        validateRoleName(request.name(), null); // No existing role to compare against
+        validateRoleName(request.name(), null);
 
         Role newRole = new Role(request.name());
-        newRole.setPrivileges(new HashSet<>()); // New roles have no privileges by default
+        newRole.setDescription(request.description()); // Reverted
+        newRole.setPrivileges(new HashSet<>());
         Role savedRole = roleRepository.save(newRole);
         return RoleResponse.fromRole(savedRole);
     }
@@ -61,6 +62,10 @@ public class RoleService {
         if (StringUtils.hasText(request.name())) {
             validateRoleName(request.name(), role);
             role.setName(request.name());
+        }
+
+        if (request.description() != null) {
+            role.setDescription(request.description()); // Reverted
         }
 
         if (Objects.nonNull(request.privileges())) {

@@ -1,6 +1,5 @@
 package com.meta.accesscontrol.service;
 
-import com.meta.accesscontrol.controller.admin.payload.AdminUserSummaryResponse;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
@@ -43,7 +42,7 @@ public class UserService {
     private String defaultPassword;
 
     @Transactional(readOnly = true)
-    public PaginationResponse<AdminUserSummaryResponse> getUsers(
+    public PaginationResponse<UserResponse> getUsers(
             int page,
             int size,
             String[] sort,
@@ -57,7 +56,7 @@ public class UserService {
 
         Page<User> userPage = userRepository.findAll(new UserSpecification(filterRequest), pageable);
 
-        return new PaginationResponse<>(userPage.map(AdminUserSummaryResponse::fromUser));
+        return new PaginationResponse<>(userPage.map(UserResponse::fromUser));
     }
 
     @Transactional(readOnly = true)

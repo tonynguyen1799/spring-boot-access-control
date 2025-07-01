@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,6 +19,9 @@ public class Role extends Auditable {
 
     @Column(length = 20, unique = true)
     private String name;
+
+    @Column(length = 255)
+    private String description; // Reverted to description
 
     @ElementCollection(targetClass = Privilege.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "role_privileges", joinColumns = @JoinColumn(name = "role_id"))

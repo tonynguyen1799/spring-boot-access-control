@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Access Control API
   description: A comprehensive API for managing users, roles, and privileges in a secure, production-ready Spring Boot application.
-  version: 1.0.0
+  version: "1.0.0"
 servers:
   - url: http://localhost:8080/api
     description: Development server
@@ -11,8 +11,7 @@ paths:
     post:
       summary: Authenticate User
       description: Authenticates a user with a username and password to receive an access token and a refresh token.
-      tags:
-        - Auth
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -27,7 +26,7 @@ paths:
                   rememberMe: true
       responses:
         '200':
-          description: Login successful
+          description: Login successful.
           content:
             application/json:
               schema:
@@ -42,7 +41,7 @@ paths:
                       refreshToken: "eyJhbGciOiJIUzI1NiJ9..."
                       type: "Bearer"
         '401':
-          description: Invalid username or password
+          description: Invalid username or password.
           content:
             application/json:
               schema:
@@ -58,8 +57,7 @@ paths:
     post:
       summary: Refresh Access Token
       description: Obtains a new access token using a valid refresh token.
-      tags:
-        - Auth
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -72,7 +70,7 @@ paths:
                   refreshToken: "eyJhbGciOiJIUzI1NiJ9..."
       responses:
         '200':
-          description: Token refreshed
+          description: Token refreshed successfully.
           content:
             application/json:
               schema:
@@ -86,40 +84,105 @@ paths:
                       token: "eyJhbGciOiJIUzI1NiJ9..."
                       type: "Bearer"
         '400':
-          description: Invalid or expired refresh token
+          description: Invalid or expired refresh token.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponseError'
+              examples:
+                InvalidToken:
+                  value:
+                    status: 400
+                    message: "Invalid or expired refresh token"
+                    data: null
 
   /auth/me:
     get:
       summary: Get Current User
       description: Retrieves the details of the currently authenticated user.
-      tags:
-        - Auth
+      tags: [Auth]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: User details fetched successfully
+          description: User details fetched successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponseUser'
+              examples:
+                Success:
+                  value:
+                    status: 200
+                    message: "User details fetched successfully"
+                    data:
+                      textId: "user-text-id-123"
+                      username: "admin"
+                      email: "admin@meta.com"
+                      enabled: true
+                      roles: ["ROLE_ADMIN"]
+                      privileges: ["USER_MANAGEMENT_READ", "USER_MANAGEMENT_WRITE", "ROLE_MANAGEMENT_READ", "ROLE_MANAGEMENT_WRITE"]
+                      profile:
+                        firstName: "Admin"
+                        lastName: "User"
+                        dateOfBirth: "1990-01-15"
+                        gender: "FEMALE"
+                        phoneNumber: "123-456-7890"
+                        address: "123 Admin Way"
+                        avatarUrl: "https://example.com/avatar.png"
+                        timeZone: "Asia/Ho_Chi_Minh"
+                        locale: "en-US"
+                      createdAt: 1672531200000
+                      createdBy: "system"
         '401':
-          description: Unauthorized
+          description: Unauthorized.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponseError'
+    put:
+      summary: Update Current User Profile
+      description: Allows the currently authenticated user to update their own profile information.
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+            examples:
+              Default:
+                value:
+                  firstName: "Anthony"
+                  lastName: "Nguyen"
+                  phoneNumber: "987-654-3210"
+      responses:
+        '200':
+          description: Profile updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseUser'
+              examples:
+                Success:
+                  value:
+                    status: 200
+                    message: "Profile updated successfully"
+                    data:
+                      textId: "user-text-id-123"
+                      username: "admin"
+                      profile:
+                        firstName: "Anthony"
+                        lastName: "Nguyen"
+                        phoneNumber: "987-654-3210"
 
   /auth/change-password:
     post:
       summary: Change Password
       description: Allows the currently authenticated user to change their password.
-      tags:
-        - Auth
+      tags: [Auth]
       security:
         - bearerAuth: []
       requestBody:
@@ -130,13 +193,13 @@ paths:
               $ref: '#/components/schemas/ChangePasswordRequest'
       responses:
         '200':
-          description: Password changed successfully!
+          description: Password changed successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponse'
         '400':
-          description: Incorrect current password or passwords do not match
+          description: Incorrect current password or new passwords do not match.
           content:
             application/json:
               schema:
@@ -146,51 +209,51 @@ paths:
     get:
       summary: Get Users
       description: Retrieves a paginated list of users, with support for filtering and sorting. Requires USER_MANAGEMENT_READ privilege.
-      tags:
-        - Admin - User Management
+      tags: [Admin - User Management]
       security:
         - bearerAuth: []
       parameters:
         - in: query
           name: page
-          schema:
-            type: integer
-            default: 0
+          schema: { type: integer, default: 0 }
         - in: query
           name: size
-          schema:
-            type: integer
-            default: 10
+          schema: { type: integer, default: 10 }
         - in: query
           name: sort
-          schema:
-            type: array
-            items:
-              type: string
-          example: ["username,asc", "createdAt,desc"]
+          schema: { type: array, items: { type: string } }
+          example: ["username,asc"]
         - in: query
           name: search
-          schema:
-            type: string
-        - in: query
-          name: roleTextIds
-          schema:
-            type: array
-            items:
-              type: string
-        - in: query
-          name: enabled
-          schema:
-            type: boolean
+          schema: { type: string }
       responses:
         '200':
-          description: Users fetched successfully
+          description: Users fetched successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponsePagedUsers'
+              examples:
+                Success:
+                  value:
+                    status: 200
+                    message: "Users fetched successfully"
+                    data:
+                      content:
+                        - textId: "user-text-id-123"
+                          username: "admin"
+                          email: "admin@meta.com"
+                          enabled: true
+                          roles: ["ROLE_ADMIN"]
+                          createdAt: 1672531200000
+                          createdBy: "system"
+                      pageNumber: 0
+                      pageSize: 10
+                      totalElements: 1
+                      totalPages: 1
+                      isLast: true
         '403':
-          description: Forbidden
+          description: Forbidden.
           content:
             application/json:
               schema:
@@ -198,8 +261,7 @@ paths:
     post:
       summary: Create User
       description: Creates a new user with a default password. Requires USER_MANAGEMENT_WRITE privilege.
-      tags:
-        - Admin - User Management
+      tags: [Admin - User Management]
       security:
         - bearerAuth: []
       requestBody:
@@ -210,13 +272,13 @@ paths:
               $ref: '#/components/schemas/CreateUserRequest'
       responses:
         '201':
-          description: User created successfully
+          description: User created successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponseUser'
         '409':
-          description: Username or email already exists
+          description: Username or email already exists.
           content:
             application/json:
               schema:
@@ -226,25 +288,23 @@ paths:
     get:
       summary: Get User Details
       description: Retrieves the full details for a specific user. Requires USER_MANAGEMENT_READ privilege.
-      tags:
-        - Admin - User Management
+      tags: [Admin - User Management]
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: textId
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
-          description: User details fetched successfully
+          description: User details fetched successfully.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JsonResponseUserWithPrivileges'
+                $ref: '#/components/schemas/JsonResponseUser'
         '404':
-          description: User not found
+          description: User not found.
           content:
             application/json:
               schema:
@@ -252,16 +312,14 @@ paths:
     put:
       summary: Update User
       description: Updates a user's roles and/or enabled status. Requires USER_MANAGEMENT_WRITE privilege.
-      tags:
-        - Admin - User Management
+      tags: [Admin - User Management]
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: textId
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -270,7 +328,7 @@ paths:
               $ref: '#/components/schemas/UpdateUserRequest'
       responses:
         '200':
-          description: User updated successfully
+          description: User updated successfully.
           content:
             application/json:
               schema:
@@ -278,25 +336,23 @@ paths:
     delete:
       summary: Delete User
       description: Deletes a user. Requires USER_MANAGEMENT_WRITE privilege.
-      tags:
-        - Admin - User Management
+      tags: [Admin - User Management]
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: textId
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
-          description: User deleted successfully
+          description: User deleted successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponse'
         '400':
-          description: Cannot delete your own account
+          description: Cannot delete your own account.
           content:
             application/json:
               schema:
@@ -306,31 +362,20 @@ paths:
     get:
       summary: Get All Roles
       description: Retrieves a list of all roles in the system. Requires ROLE_MANAGEMENT_READ privilege.
-      tags:
-        - Admin - Access Control
+      tags: [Admin - Access Control]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Roles fetched successfully
+          description: Roles fetched successfully.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/RoleResponse'
+                $ref: '#/components/schemas/JsonResponseRoleList'
     post:
       summary: Create Role
       description: Creates a new role. Requires ROLE_MANAGEMENT_WRITE privilege.
-      tags:
-        - Admin - Access Control
+      tags: [Admin - Access Control]
       security:
         - bearerAuth: []
       requestBody:
@@ -341,13 +386,13 @@ paths:
               $ref: '#/components/schemas/CreateRoleRequest'
       responses:
         '201':
-          description: Role created successfully
+          description: Role created successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponseRole'
         '409':
-          description: Role with that name already exists
+          description: Role with that name already exists.
           content:
             application/json:
               schema:
@@ -357,42 +402,32 @@ paths:
     get:
       summary: Get Role Details
       description: Retrieves the details for a specific role. Requires ROLE_MANAGEMENT_READ privilege.
-      tags:
-        - Admin - Access Control
+      tags: [Admin - Access Control]
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: textId
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
-          description: Role fetched successfully
+          description: Role fetched successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponseRole'
-        '404':
-          description: Role not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JsonResponseError'
     put:
       summary: Update Role
-      description: Updates a role's name and/or assigned privileges. Requires ROLE_MANAGEMENT_WRITE privilege.
-      tags:
-        - Admin - Access Control
+      description: Updates a role's name, description, and/or assigned privileges. Requires ROLE_MANAGEMENT_WRITE privilege.
+      tags: [Admin - Access Control]
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: textId
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -401,7 +436,7 @@ paths:
               $ref: '#/components/schemas/UpdateRoleRequest'
       responses:
         '200':
-          description: Role updated successfully
+          description: Role updated successfully.
           content:
             application/json:
               schema:
@@ -409,25 +444,23 @@ paths:
     delete:
       summary: Delete Role
       description: Deletes a role. Requires ROLE_MANAGEMENT_WRITE privilege.
-      tags:
-        - Admin - Access Control
+      tags: [Admin - Access Control]
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: textId
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         '200':
-          description: Role deleted successfully
+          description: Role deleted successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JsonResponse'
         '409':
-          description: Role is protected or in use
+          description: Role is protected or in use by users.
           content:
             application/json:
               schema:
@@ -437,26 +470,16 @@ paths:
     get:
       summary: Get All Privileges
       description: Retrieves a list of all available system privileges. Requires ROLE_MANAGEMENT_READ privilege.
-      tags:
-        - Admin - Access Control
+      tags: [Admin - Access Control]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Privileges fetched successfully
+          description: Privileges fetched successfully.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/PrivilegeResponse'
+                $ref: '#/components/schemas/JsonResponsePrivilegeList'
 
 components:
   securitySchemes:
@@ -468,216 +491,102 @@ components:
     # Request Bodies
     LoginRequest:
       type: object
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-        rememberMe:
-          type: boolean
+      properties: { username: { type: string }, password: { type: string }, rememberMe: { type: boolean } }
     RefreshTokenRequest:
       type: object
-      properties:
-        refreshToken:
-          type: string
+      properties: { refreshToken: { type: string } }
     ChangePasswordRequest:
       type: object
+      properties: { currentPassword: { type: string }, newPassword: { type: string }, confirmPassword: { type: string } }
+    UpdateUserProfileRequest:
+      type: object
       properties:
-        currentPassword:
-          type: string
-        newPassword:
-          type: string
-        confirmPassword:
-          type: string
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        gender: { $ref: '#/components/schemas/Gender', nullable: true }
+        phoneNumber: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        timeZone: { type: string, nullable: true }
+        locale: { type: string, nullable: true }
     CreateUserRequest:
       type: object
-      properties:
-        username:
-          type: string
-        email:
-          type: string
-        roleTextIds:
-          type: array
-          items:
-            type: string
+      properties: { username: { type: string }, email: { type: string }, roleTextIds: { type: array, items: { type: string } } }
     UpdateUserRequest:
       type: object
-      properties:
-        roleTextIds:
-          type: array
-          items:
-            type: string
-        enabled:
-          type: boolean
+      properties: { roleTextIds: { type: array, items: { type: string } }, enabled: { type: boolean } }
     CreateRoleRequest:
       type: object
-      properties:
-        name:
-          type: string
+      properties: { name: { type: string }, description: { type: string } }
     UpdateRoleRequest:
       type: object
-      properties:
-        name:
-          type: string
-        privileges:
-          type: array
-          items:
-            type: string
-            enum:
-              - ROLE_MANAGEMENT_READ
-              - ROLE_MANAGEMENT_WRITE
-              - USER_MANAGEMENT_READ
-              - USER_MANAGEMENT_WRITE
+      properties: { name: { type: string }, description: { type: string }, privileges: { type: array, items: { $ref: '#/components/schemas/Privilege' } } }
+
+    # Enums
+    Privilege:
+      type: string
+      enum: [ROLE_MANAGEMENT_READ, ROLE_MANAGEMENT_WRITE, USER_MANAGEMENT_READ, USER_MANAGEMENT_WRITE]
+    Gender:
+      type: string
+      enum: [MALE, FEMALE, PREFER_NOT_TO_SAY, OTHER]
 
     # Response Bodies & Payloads
     JsonResponse:
       type: object
-      properties:
-        status:
-          type: integer
-        message:
-          type: string
-        data:
-          type: object
-          nullable: true
+      properties: { status: { type: integer }, message: { type: string }, data: { type: object, nullable: true } }
     JsonResponseError:
       type: object
-      properties:
-        status:
-          type: integer
-        message:
-          type: string
-        data:
-          type: object
-          nullable: true
+      properties: { status: { type: integer }, message: { type: string }, data: { type: object, nullable: true } }
     TokenResponse:
       type: object
-      properties:
-        token:
-          type: string
-        refreshToken:
-          type: string
-        type:
-          type: string
-          default: "Bearer"
-    JsonResponseToken:
-      allOf:
-        - $ref: '#/components/schemas/JsonResponse'
-        - type: object
-          properties:
-            data:
-              $ref: '#/components/schemas/TokenResponse'
+      properties: { token: { type: string }, refreshToken: { type: string }, type: { type: string, default: "Bearer" } }
     UserResponse:
       type: object
       properties:
-        textId:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        enabled:
-          type: boolean
-        roles:
-          type: array
-          items:
-            type: string
-        profile:
-          $ref: '#/components/schemas/UserProfileResponse'
-    UserResponseWithPrivileges:
-      allOf:
-        - $ref: '#/components/schemas/UserResponse'
-        - type: object
-          properties:
-            privileges:
-              type: array
-              items:
-                type: string
+        textId: { type: string }
+        username: { type: string }
+        email: { type: string }
+        enabled: { type: boolean }
+        roles: { type: array, items: { type: string } }
+        privileges: { type: array, items: { type: string }, nullable: true }
+        profile: { $ref: '#/components/schemas/UserProfileResponse', nullable: true }
+        createdAt: { type: integer, format: int64, nullable: true }
+        createdBy: { type: string, nullable: true }
+        updatedAt: { type: integer, format: int64, nullable: true }
+        updatedBy: { type: string, nullable: true }
     UserProfileResponse:
       type: object
       properties:
-        firstName:
-          type: string
-        lastName:
-          type: string
-    AdminUserSummaryResponse:
-      type: object
-      properties:
-        textId:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        enabled:
-          type: boolean
-        roles:
-          type: array
-          items:
-            type: string
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        gender: { $ref: '#/components/schemas/Gender', nullable: true }
+        phoneNumber: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        timeZone: { type: string, nullable: true }
+        locale: { type: string, nullable: true }
     PaginationResponse:
       type: object
-      properties:
-        pageNumber:
-          type: integer
-        pageSize:
-          type: integer
-        totalElements:
-          type: integer
-        totalPages:
-          type: integer
-        isLast:
-          type: boolean
-    JsonResponseUser:
-      allOf:
-        - $ref: '#/components/schemas/JsonResponse'
-        - type: object
-          properties:
-            data:
-              $ref: '#/components/schemas/UserResponse'
-    JsonResponseUserWithPrivileges:
-      allOf:
-        - $ref: '#/components/schemas/JsonResponse'
-        - type: object
-          properties:
-            data:
-              $ref: '#/components/schemas/UserResponseWithPrivileges'
-    JsonResponsePagedUsers:
-      allOf:
-        - $ref: '#/components/schemas/JsonResponse'
-        - type: object
-          properties:
-            data:
-              allOf:
-                - $ref: '#/components/schemas/PaginationResponse'
-                - type: object
-                  properties:
-                    content:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/AdminUserSummaryResponse'
+      properties: { pageNumber: { type: integer }, pageSize: { type: integer }, totalElements: { type: integer }, totalPages: { type: integer }, isLast: { type: boolean } }
     RoleResponse:
       type: object
-      properties:
-        textId:
-          type: string
-        name:
-          type: string
-        privileges:
-          type: array
-          items:
-            type: string
-    JsonResponseRole:
-      allOf:
-        - $ref: '#/components/schemas/JsonResponse'
-        - type: object
-          properties:
-            data:
-              $ref: '#/components/schemas/RoleResponse'
+      properties: { textId: { type: string }, name: { type: string }, description: { type: string, nullable: true }, privileges: { type: array, items: { $ref: '#/components/schemas/Privilege' } } }
     PrivilegeResponse:
       type: object
-      properties:
-        name:
-          type: string
-        description:
-          type: string
+      properties: { name: { type: string }, description: { type: string } }
+
+    # Wrapper Schemas for JsonResponse
+    JsonResponseToken:
+      allOf: [ { $ref: '#/components/schemas/JsonResponse' }, { type: object, properties: { data: { $ref: '#/components/schemas/TokenResponse' } } } ]
+    JsonResponseUser:
+      allOf: [ { $ref: '#/components/schemas/JsonResponse' }, { type: object, properties: { data: { $ref: '#/components/schemas/UserResponse' } } } ]
+    JsonResponsePagedUsers:
+      allOf: [ { $ref: '#/components/schemas/JsonResponse' }, { type: object, properties: { data: { allOf: [ { $ref: '#/components/schemas/PaginationResponse' }, { type: object, properties: { content: { type: array, items: { $ref: '#/components/schemas/UserResponse' } } } } ] } } } ]
+    JsonResponseRole:
+      allOf: [ { $ref: '#/components/schemas/JsonResponse' }, { type: object, properties: { data: { $ref: '#/components/schemas/RoleResponse' } } } ]
+    JsonResponseRoleList:
+      allOf: [ { $ref: '#/components/schemas/JsonResponse' }, { type: object, properties: { data: { type: array, items: { $ref: '#/components/schemas/RoleResponse' } } } } ]
+    JsonResponsePrivilegeList:
+      allOf: [ { $ref: '#/components/schemas/JsonResponse' }, { type: object, properties: { data: { type: array, items: { $ref: '#/components/schemas/PrivilegeResponse' } } } } ]

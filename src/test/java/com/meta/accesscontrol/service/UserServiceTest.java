@@ -1,11 +1,10 @@
 package com.meta.accesscontrol.service;
 
-import com.meta.accesscontrol.controller.admin.payload.AdminUserSummaryResponse;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
-import com.meta.accesscontrol.controller.payload.response.UserResponse;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
+import com.meta.accesscontrol.controller.payload.response.UserResponse;
 import com.meta.accesscontrol.exception.DuplicateResourceException;
 import com.meta.accesscontrol.exception.ResourceNotFoundException;
 import com.meta.accesscontrol.model.Privilege;
@@ -16,7 +15,6 @@ import com.meta.accesscontrol.repository.RoleRepository;
 import com.meta.accesscontrol.repository.UserRepository;
 import com.meta.accesscontrol.repository.specs.UserSpecification;
 import com.meta.accesscontrol.security.services.UserDetailsImpl;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +39,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,6 +71,8 @@ class UserServiceTest {
         // Setup main user object
         user = new User("testuser", "test@meta.com", "password");
         user.setTextId("user-text-id");
+        user.setCreatedAt(Instant.now());
+        user.setCreatedBy("system");
 
         UserProfile userProfile = new UserProfile(user);
         userProfile.setFirstName("Test");
@@ -87,19 +89,24 @@ class UserServiceTest {
     }
 
     @Test
-    void testGetUsers_withNoFilters_shouldReturnPagedAdminSummary() {
+    void testGetUsers_withNoFilters_shouldReturnPagedUserResponse() {
         // Arrange
         Page<User> userPage = new PageImpl<>(List.of(user));
         when(userRepository.findAll(any(UserSpecification.class), any(Pageable.class))).thenReturn(userPage);
         UserFilterRequest filterRequest = new UserFilterRequest(null, null, null);
 
         // Act
-        PaginationResponse<AdminUserSummaryResponse> result = userService.getUsers(0, 10, null, filterRequest);
+        PaginationResponse<UserResponse> result = userService.getUsers(0, 10, null, filterRequest);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.content().size());
-        assertEquals("testuser", result.content().getFirst().username());
+        UserResponse summary = result.content().getFirst();
+        assertEquals("testuser", summary.username());
+        assertNotNull(summary.createdAt());
+        assertEquals("system", summary.createdBy());
+        assertNull(summary.privileges());
+        assertNull(summary.profile());
         verify(userRepository).findAll(any(UserSpecification.class), any(Pageable.class));
     }
 
@@ -122,16 +129,21 @@ class UserServiceTest {
     @Test
     void testGetUser_whenUserExists_shouldReturnDetailedUserResponse() {
         // Arrange
+        user.getRoles().add(userRole); // Add role to user for privilege check
+        userRole.setPrivileges(Set.of(Privilege.USER_MANAGEMENT_READ));
         when(userRepository.findByTextId("user-text-id")).thenReturn(Optional.of(user));
 
         // Act
-        // --- MODIFIED: The service method now returns the consolidated DTO ---
         UserResponse result = userService.getUser("user-text-id");
 
         // Assert
         assertNotNull(result);
         assertEquals("testuser", result.username());
         assertEquals("Test", result.profile().firstName());
+        assertNotNull(result.privileges());
+        assertTrue(result.privileges().contains("USER_MANAGEMENT_READ"));
+        assertNotNull(result.createdAt());
+        assertEquals("system", result.createdBy());
         verify(userRepository).findByTextId("user-text-id");
     }
 
@@ -148,16 +160,10 @@ class UserServiceTest {
     void testCreateUser_withRoles_shouldCreateUserWithRoles() {
         // Arrange
         CreateUserRequest request = new CreateUserRequest("newuser", "new@meta.com", List.of("role-text-id"));
-
-        // --- The userRole needs privileges for the assertion on the detailed lookup ---
-        userRole.setPrivileges(Set.of(Privilege.USER_MANAGEMENT_READ));
-
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@meta.com")).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(roleRepository.findByTextId("role-text-id")).thenReturn(Optional.of(userRole));
-
-        // When the user is saved, return the user object
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setRoles(Set.of(userRole));
@@ -171,12 +177,8 @@ class UserServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("newuser", result.username());
-        // The simple response from createUser should have roles
         assertTrue(result.roles().contains("ROLE_USER"));
-        // --- The simple response from createUser should NOT have privileges ---
-        assertNull(result.privileges());
-
-        // Verify that the save method was called
+        assertNull(result.privileges()); // Privileges should be null for this response
         verify(userRepository).save(any(User.class));
     }
 
@@ -209,18 +211,13 @@ class UserServiceTest {
         UpdateUserRequest request = new UpdateUserRequest(List.of("role-text-id"), true);
         mockSecurityContext("admin-user", "admin-text-id");
         when(userRepository.findByTextId("user-text-id")).thenReturn(Optional.of(user));
-
         when(roleRepository.findByTextId("role-text-id")).thenReturn(Optional.of(userRole));
-
-        // --- MODIFIED: Ensure the mock returns the user passed to it to simulate a save ---
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        // --- MODIFIED: The service method now returns the consolidated DTO ---
         UserResponse result = userService.updateUser("user-text-id", request);
 
         // Assert
-        // --- MODIFIED: Assert against the fields of the new DTO ---
         assertNotNull(result);
         assertTrue(result.enabled());
         assertTrue(result.roles().contains("ROLE_USER"));
