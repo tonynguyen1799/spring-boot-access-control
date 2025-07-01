@@ -1,5 +1,6 @@
 package com.meta.accesscontrol.service;
 
+import com.meta.accesscontrol.controller.admin.payload.AdminUserSummaryResponse;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UserResponse;
@@ -42,7 +43,7 @@ public class UserService {
     private String defaultPassword;
 
     @Transactional(readOnly = true)
-    public PaginationResponse<UserResponse> getUsers(
+    public PaginationResponse<AdminUserSummaryResponse> getUsers(
             int page,
             int size,
             String[] sort,
@@ -50,13 +51,13 @@ public class UserService {
 
         List<Sort.Order> orders = PaginationUtils.buildSortOrders(
                 sort,
-                Sort.Order.desc("updatedAt")
+                Sort.Order.desc("createdAt")
         );
         Pageable pageable = PageRequest.of(page, size, Sort.by(orders));
 
         Page<User> userPage = userRepository.findAll(new UserSpecification(filterRequest), pageable);
 
-        return new PaginationResponse<>(userPage.map(UserResponse::fromUser));
+        return new PaginationResponse<>(userPage.map(AdminUserSummaryResponse::fromUser));
     }
 
     @Transactional(readOnly = true)

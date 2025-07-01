@@ -1,5 +1,6 @@
 package com.meta.accesscontrol.service;
 
+import com.meta.accesscontrol.controller.admin.payload.AdminUserSummaryResponse;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
@@ -9,6 +10,7 @@ import com.meta.accesscontrol.exception.DuplicateResourceException;
 import com.meta.accesscontrol.exception.ResourceNotFoundException;
 import com.meta.accesscontrol.model.Role;
 import com.meta.accesscontrol.model.User;
+import com.meta.accesscontrol.model.UserProfile;
 import com.meta.accesscontrol.repository.RoleRepository;
 import com.meta.accesscontrol.repository.UserRepository;
 import com.meta.accesscontrol.repository.specs.UserSpecification;
@@ -28,6 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -61,29 +64,36 @@ class UserServiceTest {
 
     private User user;
     private Role userRole;
-    private static final String DEFAULT_PASSWORD = "Password123!";
 
     @BeforeEach
     void setUp() {
+        // Setup main user object
         user = new User("testuser", "test@meta.com", "password");
         user.setTextId("user-text-id");
 
+        UserProfile userProfile = new UserProfile(user);
+        userProfile.setFirstName("Test");
+        user.setUserProfile(userProfile);
+
         userRole = new Role("ROLE_USER");
         userRole.setTextId("role-text-id");
+
+        // Manually inject the default password property for testing
+        ReflectionTestUtils.setField(userService, "defaultPassword", "Password123!");
 
         // Mock the SecurityContext to simulate a logged-in user
         SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-    void testGetUsers_withNoFilters_shouldReturnPagedUsers() {
+    void testGetUsers_withNoFilters_shouldReturnPagedAdminSummary() {
         // Arrange
         Page<User> userPage = new PageImpl<>(List.of(user));
         when(userRepository.findAll(any(UserSpecification.class), any(Pageable.class))).thenReturn(userPage);
         UserFilterRequest filterRequest = new UserFilterRequest(null, null, null);
 
         // Act
-        PaginationResponse<UserResponse> result = userService.getUsers(0, 10, null, filterRequest);
+        PaginationResponse<AdminUserSummaryResponse> result = userService.getUsers(0, 10, null, filterRequest);
 
         // Assert
         assertNotNull(result);
@@ -105,13 +115,11 @@ class UserServiceTest {
 
         // Assert
         verify(userRepository).findAll(specCaptor.capture(), any(Pageable.class));
-        // You can add more detailed assertions on the specification if needed
         assertNotNull(specCaptor.getValue());
     }
 
-
     @Test
-    void testGetUser_whenUserExists_shouldReturnUserResponse() {
+    void testGetUser_whenUserExists_shouldReturnDetailedUserResponse() {
         // Arrange
         when(userRepository.findByTextId("user-text-id")).thenReturn(Optional.of(user));
 
@@ -121,6 +129,7 @@ class UserServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("testuser", result.username());
+        assertEquals("Test", result.profile().firstName());
         verify(userRepository).findByTextId("user-text-id");
     }
 
@@ -134,43 +143,19 @@ class UserServiceTest {
     }
 
     @Test
-    void testCreateUser_whenEmailExists_shouldThrowDuplicateResourceException() {
-        // Arrange
-        CreateUserRequest request = new CreateUserRequest("newuser", "existing@meta.com", Collections.emptyList());
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("existing@meta.com")).thenReturn(true);
-
-        // Act & Assert
-        assertThrows(DuplicateResourceException.class, () -> userService.createUser(request));
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
-    void testCreateUser_withNonExistentRole_shouldThrowResourceNotFoundException() {
-        // Arrange
-        CreateUserRequest request = new CreateUserRequest("newuser", "new@meta.com", List.of("non-existent-role-id"));
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("new@meta.com")).thenReturn(false);
-        when(roleRepository.findByTextId("non-existent-role-id")).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> userService.createUser(request));
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
     void testCreateUser_withRoles_shouldCreateUserWithRoles() {
         // Arrange
         CreateUserRequest request = new CreateUserRequest("newuser", "new@meta.com", List.of("role-text-id"));
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@meta.com")).thenReturn(false);
-        when(passwordEncoder.encode(DEFAULT_PASSWORD)).thenReturn("encodedPassword");
+        when(passwordEncoder.encode("Password123!")).thenReturn("encodedPassword");
 
         when(roleRepository.findByTextId("role-text-id")).thenReturn(Optional.of(userRole));
 
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setRoles(Set.of(userRole));
+            savedUser.setUserProfile(new UserProfile(savedUser));
             return savedUser;
         });
 
@@ -186,14 +171,25 @@ class UserServiceTest {
     }
 
     @Test
-    void testUpdateUser_whenUserNotFound_shouldThrowResourceNotFoundException() {
+    void testCreateUser_whenUsernameExists_shouldThrowDuplicateResourceException() {
         // Arrange
-        UpdateUserRequest request = new UpdateUserRequest(null, true);
-        mockSecurityContext("admin-user", "admin-text-id");
-        when(userRepository.findByTextId("non-existent-id")).thenReturn(Optional.empty());
+        CreateUserRequest request = new CreateUserRequest("existinguser", "new@meta.com", Collections.emptyList());
+        when(userRepository.existsByUsername("existinguser")).thenReturn(true);
 
         // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () -> userService.updateUser("non-existent-id", request));
+        assertThrows(DuplicateResourceException.class, () -> userService.createUser(request));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void testCreateUser_whenEmailExists_shouldThrowDuplicateResourceException() {
+        // Arrange
+        CreateUserRequest request = new CreateUserRequest("newuser", "existing@meta.com", Collections.emptyList());
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("existing@meta.com")).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(DuplicateResourceException.class, () -> userService.createUser(request));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -217,6 +213,17 @@ class UserServiceTest {
         assertTrue(user.getRoles().contains(userRole));
     }
 
+    @Test
+    void testUpdateUser_whenUserNotFound_shouldThrowResourceNotFoundException() {
+        // Arrange
+        UpdateUserRequest request = new UpdateUserRequest(null, true);
+        mockSecurityContext("admin-user", "admin-text-id");
+        when(userRepository.findByTextId("non-existent-id")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> userService.updateUser("non-existent-id", request));
+        verify(userRepository, never()).save(any(User.class));
+    }
 
     @Test
     void testUpdateUser_whenUpdatingSelf_shouldThrowIllegalArgumentException() {

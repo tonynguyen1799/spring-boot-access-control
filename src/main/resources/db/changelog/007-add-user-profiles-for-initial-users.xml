@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="7" author="system">
+        <comment>Adds profile data for the initial set of users</comment>
+
+        <insert tableName="user_profiles">
+            <column name="user_id" value="1"/>
+            <column name="first_name" value="Default"/>
+            <column name="last_name" value="User"/>
+            <column name="gender" value="PREFER_NOT_TO_SAY"/>
+        </insert>
+
+        <insert tableName="user_profiles">
+            <column name="user_id" value="2"/>
+            <column name="first_name" value="Moderator"/>
+            <column name="last_name" value="User"/>
+            <column name="gender" value="MALE"/>
+        </insert>
+
+        <insert tableName="user_profiles">
+            <column name="user_id" value="3"/>
+            <column name="first_name" value="Admin"/>
+            <column name="last_name" value="User"/>
+            <column name="gender" value="FEMALE"/>
+            <column name="time_zone" value="Asia/Ho_Chi_Minh"/>
+            <column name="locale" value="en-US"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>

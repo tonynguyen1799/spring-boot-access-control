@@ -3,8 +3,9 @@ package com.meta.accesscontrol.controller;
 import com.meta.accesscontrol.controller.payload.request.ChangePasswordRequest;
 import com.meta.accesscontrol.controller.payload.request.LoginRequest;
 import com.meta.accesscontrol.controller.payload.request.RefreshTokenRequest;
-import com.meta.accesscontrol.controller.payload.response.JsonResponse;
+import com.meta.accesscontrol.controller.payload.request.UpdateUserProfileRequest;
 import com.meta.accesscontrol.controller.payload.response.UserResponse;
+import com.meta.accesscontrol.controller.payload.response.JsonResponse;
 import com.meta.accesscontrol.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,12 @@ public class AuthController {
     public JsonResponse<UserResponse> getCurrentUser() {
         UserResponse userResponse = authService.getCurrentUser();
         return new JsonResponse<>(HttpStatus.OK.value(), "User details fetched successfully", userResponse);
+    }
+
+    @PutMapping("/me")
+    public JsonResponse<UserResponse> updateCurrentUserProfile(@Valid @RequestBody UpdateUserProfileRequest request) {
+        UserResponse updatedUser = authService.updateCurrentUserProfile(request);
+        return new JsonResponse<>(HttpStatus.OK.value(), "Profile updated successfully", updatedUser);
     }
 
     @PostMapping("/change-password")

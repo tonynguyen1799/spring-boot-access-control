@@ -37,10 +37,13 @@ public class User extends Auditable {
     @Size(max = 120)
     private String password;
 
-    // This annotation tells Hibernate how to map the boolean field to a specific
-    // column type for MySQL, aligning it with what Liquibase creates from "type=boolean".
     @Column(columnDefinition = "tinyint(1)")
     private boolean enabled = true;
+
+    // --- NEW RELATIONSHIP TO UserProfile ---
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
+    private UserProfile userProfile;
+    // --- END OF RELATIONSHIP ---
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",
@@ -52,5 +55,19 @@ public class User extends Auditable {
         this.username = username;
         this.email = email;
         this.password = password;
+        // Ensure UserProfile is created with the User
+        this.userProfile = new UserProfile(this);
+    }
+
+    // Helper method to maintain consistency
+    public void setUserProfile(UserProfile userProfile) {
+        if (userProfile == null) {
+            if (this.userProfile != null) {
+                this.userProfile.setUser(null);
+            }
+        } else {
+            userProfile.setUser(this);
+        }
+        this.userProfile = userProfile;
     }
 }

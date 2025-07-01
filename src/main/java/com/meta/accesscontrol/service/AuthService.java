@@ -2,9 +2,11 @@ package com.meta.accesscontrol.service;
 
 import com.meta.accesscontrol.controller.payload.request.ChangePasswordRequest;
 import com.meta.accesscontrol.controller.payload.request.LoginRequest;
+import com.meta.accesscontrol.controller.payload.request.UpdateUserProfileRequest;
 import com.meta.accesscontrol.controller.payload.response.UserResponse;
 import com.meta.accesscontrol.exception.ResourceNotFoundException;
 import com.meta.accesscontrol.model.User;
+import com.meta.accesscontrol.model.UserProfile;
 import com.meta.accesscontrol.repository.UserRepository;
 import com.meta.accesscontrol.security.jwt.JwtUtils;
 import com.meta.accesscontrol.security.services.UserDetailsImpl;
@@ -12,15 +14,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -57,14 +56,33 @@ public class AuthService {
         );
     }
 
+    @Transactional(readOnly = true)
     public UserResponse getCurrentUser() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = getCurrentAuthenticatedUser();
-        List<String> authorities = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+        return UserResponse.fromUser(user, userDetails.getAuthorities());
+    }
 
-        return UserResponse.fromUser(user, authorities);
+    @Transactional
+    public UserResponse updateCurrentUserProfile(UpdateUserProfileRequest request) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = getCurrentAuthenticatedUser();
+        UserProfile profile = user.getUserProfile();
+
+        if (request.firstName() != null) profile.setFirstName(request.firstName());
+        if (request.lastName() != null) profile.setLastName(request.lastName());
+        if (request.dateOfBirth() != null) profile.setDateOfBirth(request.dateOfBirth());
+        if (request.gender() != null) profile.setGender(request.gender());
+        if (request.phoneNumber() != null) profile.setPhoneNumber(request.phoneNumber());
+        if (request.address() != null) profile.setAddress(request.address());
+        if (request.avatarUrl() != null) profile.setAvatarUrl(request.avatarUrl());
+        if (request.timeZone() != null) profile.setTimeZone(request.timeZone());
+        if (request.locale() != null) profile.setLocale(request.locale());
+
+        user.setUserProfile(profile);
+        User updatedUser = userRepository.save(user);
+
+        return UserResponse.fromUser(updatedUser, userDetails.getAuthorities());
     }
 
     @Transactional

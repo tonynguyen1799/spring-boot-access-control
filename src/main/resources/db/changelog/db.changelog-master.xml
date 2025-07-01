@@ -9,5 +9,7 @@
     <include file="002-initial-data.xml" relativeToChangelogFile="true"/>
     <include file="003-add-user-status.xml" relativeToChangelogFile="true"/>
     <include file="004-add-user-updated-at-index.xml" relativeToChangelogFile="true"/>
+    <include file="006-create-user-profiles-table.xml" relativeToChangelogFile="true"/>
+    <include file="007-add-user-profiles-for-initial-users.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="6" author="system">
+        <comment>Creates the user_profiles table</comment>
+
+        <createTable tableName="user_profiles">
+            <column name="user_id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(50)"/>
+            <column name="last_name" type="varchar(50)"/>
+            <column name="date_of_birth" type="date"/>
+            <column name="gender" type="varchar(20)"/>
+            <column name="phone_number" type="varchar(20)"/>
+            <column name="address" type="varchar(255)"/>
+            <column name="avatar_url" type="varchar(255)"/>
+            <column name="time_zone" type="varchar(50)"/>
+            <column name="locale" type="varchar(10)"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_profiles"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_profiles_user_id"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -19,13 +19,13 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public JsonResponse<PaginationResponse<UserResponse>> getUsers(
+    public JsonResponse<PaginationResponse<AdminUserSummaryResponse>> getUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String[] sort,
             @Valid UserFilterRequest filterRequest
     ) {
-        PaginationResponse<UserResponse> users = userService.getUsers(page, size, sort, filterRequest);
+        PaginationResponse<AdminUserSummaryResponse> users = userService.getUsers(page, size, sort, filterRequest);
         return new JsonResponse<>(HttpStatus.OK.value(), "Users fetched successfully", users);
     }
 

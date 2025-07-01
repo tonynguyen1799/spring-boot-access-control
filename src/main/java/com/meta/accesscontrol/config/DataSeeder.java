@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@Component
+//@Component
 @Profile("dev")
 @RequiredArgsConstructor
 @Slf4j
