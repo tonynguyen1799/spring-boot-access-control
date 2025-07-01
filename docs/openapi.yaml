@@ -1,0 +1,683 @@
+openapi: 3.0.3
+info:
+  title: Access Control API
+  description: A comprehensive API for managing users, roles, and privileges in a secure, production-ready Spring Boot application.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+paths:
+  /auth/signin:
+    post:
+      summary: Authenticate User
+      description: Authenticates a user with a username and password to receive an access token and a refresh token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              Default:
+                value:
+                  username: "admin"
+                  password: "password"
+                  rememberMe: true
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseToken'
+              examples:
+                Success:
+                  value:
+                    status: 200
+                    message: "Login successful"
+                    data:
+                      token: "eyJhbGciOiJIUzI1NiJ9..."
+                      refreshToken: "eyJhbGciOiJIUzI1NiJ9..."
+                      type: "Bearer"
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+              examples:
+                InvalidCredentials:
+                  value:
+                    status: 401
+                    message: "Invalid username or password"
+                    data: null
+
+  /auth/refresh:
+    post:
+      summary: Refresh Access Token
+      description: Obtains a new access token using a valid refresh token.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            examples:
+              Default:
+                value:
+                  refreshToken: "eyJhbGciOiJIUzI1NiJ9..."
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseToken'
+              examples:
+                Success:
+                  value:
+                    status: 200
+                    message: "Token refreshed"
+                    data:
+                      token: "eyJhbGciOiJIUzI1NiJ9..."
+                      type: "Bearer"
+        '400':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /auth/me:
+    get:
+      summary: Get Current User
+      description: Retrieves the details of the currently authenticated user.
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseUser'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /auth/change-password:
+    post:
+      summary: Change Password
+      description: Allows the currently authenticated user to change their password.
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully!
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponse'
+        '400':
+          description: Incorrect current password or passwords do not match
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /admin/users:
+    get:
+      summary: Get Users
+      description: Retrieves a paginated list of users, with support for filtering and sorting. Requires USER_MANAGEMENT_READ privilege.
+      tags:
+        - Admin - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: sort
+          schema:
+            type: array
+            items:
+              type: string
+          example: ["username,asc", "createdAt,desc"]
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: roleTextIds
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: enabled
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Users fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponsePagedUsers'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+    post:
+      summary: Create User
+      description: Creates a new user with a default password. Requires USER_MANAGEMENT_WRITE privilege.
+      tags:
+        - Admin - User Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseUser'
+        '409':
+          description: Username or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /admin/users/{textId}:
+    get:
+      summary: Get User Details
+      description: Retrieves the full details for a specific user. Requires USER_MANAGEMENT_READ privilege.
+      tags:
+        - Admin - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: textId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseUserWithPrivileges'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+    put:
+      summary: Update User
+      description: Updates a user's roles and/or enabled status. Requires USER_MANAGEMENT_WRITE privilege.
+      tags:
+        - Admin - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: textId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseUser'
+    delete:
+      summary: Delete User
+      description: Deletes a user. Requires USER_MANAGEMENT_WRITE privilege.
+      tags:
+        - Admin - User Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: textId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponse'
+        '400':
+          description: Cannot delete your own account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /admin/access-control/roles:
+    get:
+      summary: Get All Roles
+      description: Retrieves a list of all roles in the system. Requires ROLE_MANAGEMENT_READ privilege.
+      tags:
+        - Admin - Access Control
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Roles fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoleResponse'
+    post:
+      summary: Create Role
+      description: Creates a new role. Requires ROLE_MANAGEMENT_WRITE privilege.
+      tags:
+        - Admin - Access Control
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseRole'
+        '409':
+          description: Role with that name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /admin/access-control/roles/{textId}:
+    get:
+      summary: Get Role Details
+      description: Retrieves the details for a specific role. Requires ROLE_MANAGEMENT_READ privilege.
+      tags:
+        - Admin - Access Control
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: textId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseRole'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+    put:
+      summary: Update Role
+      description: Updates a role's name and/or assigned privileges. Requires ROLE_MANAGEMENT_WRITE privilege.
+      tags:
+        - Admin - Access Control
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: textId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseRole'
+    delete:
+      summary: Delete Role
+      description: Deletes a role. Requires ROLE_MANAGEMENT_WRITE privilege.
+      tags:
+        - Admin - Access Control
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: textId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponse'
+        '409':
+          description: Role is protected or in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JsonResponseError'
+
+  /admin/access-control/privileges:
+    get:
+      summary: Get All Privileges
+      description: Retrieves a list of all available system privileges. Requires ROLE_MANAGEMENT_READ privilege.
+      tags:
+        - Admin - Access Control
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Privileges fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PrivilegeResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    # Request Bodies
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+        confirmPassword:
+          type: string
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        roleTextIds:
+          type: array
+          items:
+            type: string
+    UpdateUserRequest:
+      type: object
+      properties:
+        roleTextIds:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+    CreateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        privileges:
+          type: array
+          items:
+            type: string
+            enum:
+              - ROLE_MANAGEMENT_READ
+              - ROLE_MANAGEMENT_WRITE
+              - USER_MANAGEMENT_READ
+              - USER_MANAGEMENT_WRITE
+
+    # Response Bodies & Payloads
+    JsonResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+    JsonResponseError:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        refreshToken:
+          type: string
+        type:
+          type: string
+          default: "Bearer"
+    JsonResponseToken:
+      allOf:
+        - $ref: '#/components/schemas/JsonResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/TokenResponse'
+    UserResponse:
+      type: object
+      properties:
+        textId:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        enabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+        profile:
+          $ref: '#/components/schemas/UserProfileResponse'
+    UserResponseWithPrivileges:
+      allOf:
+        - $ref: '#/components/schemas/UserResponse'
+        - type: object
+          properties:
+            privileges:
+              type: array
+              items:
+                type: string
+    UserProfileResponse:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+    AdminUserSummaryResponse:
+      type: object
+      properties:
+        textId:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        enabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+    PaginationResponse:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        isLast:
+          type: boolean
+    JsonResponseUser:
+      allOf:
+        - $ref: '#/components/schemas/JsonResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserResponse'
+    JsonResponseUserWithPrivileges:
+      allOf:
+        - $ref: '#/components/schemas/JsonResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/UserResponseWithPrivileges'
+    JsonResponsePagedUsers:
+      allOf:
+        - $ref: '#/components/schemas/JsonResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/PaginationResponse'
+                - type: object
+                  properties:
+                    content:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/AdminUserSummaryResponse'
+    RoleResponse:
+      type: object
+      properties:
+        textId:
+          type: string
+        name:
+          type: string
+        privileges:
+          type: array
+          items:
+            type: string
+    JsonResponseRole:
+      allOf:
+        - $ref: '#/components/schemas/JsonResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/RoleResponse'
+    PrivilegeResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string

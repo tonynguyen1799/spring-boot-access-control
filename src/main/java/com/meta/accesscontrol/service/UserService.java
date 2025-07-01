@@ -3,9 +3,9 @@ package com.meta.accesscontrol.service;
 import com.meta.accesscontrol.controller.admin.payload.AdminUserSummaryResponse;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
-import com.meta.accesscontrol.controller.admin.payload.UserResponse;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
+import com.meta.accesscontrol.controller.payload.response.UserResponse;
 import com.meta.accesscontrol.exception.DuplicateResourceException;
 import com.meta.accesscontrol.exception.ResourceNotFoundException;
 import com.meta.accesscontrol.model.Role;
@@ -62,7 +62,9 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getUser(String textId) {
-        return UserResponse.fromUser(findUserByTextId(textId));
+        User user = findUserByTextId(textId);
+        UserDetailsImpl userDetails = UserDetailsImpl.build(user);
+        return UserResponse.fromUser(user, userDetails.getAuthorities());
     }
 
     @Transactional

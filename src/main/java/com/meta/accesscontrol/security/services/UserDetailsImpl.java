@@ -38,7 +38,6 @@ public class UserDetailsImpl implements UserDetails {
     }
 
     public static UserDetailsImpl build(User user) {
-        // Collect all distinct privileges from the user's roles
         List<GrantedAuthority> authorities = user.getRoles().stream()
                 .map(Role::getPrivileges)
                 .flatMap(Set::stream)

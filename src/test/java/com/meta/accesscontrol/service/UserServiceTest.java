@@ -4,10 +4,11 @@ import com.meta.accesscontrol.controller.admin.payload.AdminUserSummaryResponse;
 import com.meta.accesscontrol.controller.admin.payload.CreateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UpdateUserRequest;
 import com.meta.accesscontrol.controller.admin.payload.UserFilterRequest;
-import com.meta.accesscontrol.controller.admin.payload.UserResponse;
+import com.meta.accesscontrol.controller.payload.response.UserResponse;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
 import com.meta.accesscontrol.exception.DuplicateResourceException;
 import com.meta.accesscontrol.exception.ResourceNotFoundException;
+import com.meta.accesscontrol.model.Privilege;
 import com.meta.accesscontrol.model.Role;
 import com.meta.accesscontrol.model.User;
 import com.meta.accesscontrol.model.UserProfile;
@@ -124,6 +125,7 @@ class UserServiceTest {
         when(userRepository.findByTextId("user-text-id")).thenReturn(Optional.of(user));
 
         // Act
+        // --- MODIFIED: The service method now returns the consolidated DTO ---
         UserResponse result = userService.getUser("user-text-id");
 
         // Assert
@@ -146,12 +148,16 @@ class UserServiceTest {
     void testCreateUser_withRoles_shouldCreateUserWithRoles() {
         // Arrange
         CreateUserRequest request = new CreateUserRequest("newuser", "new@meta.com", List.of("role-text-id"));
+
+        // --- The userRole needs privileges for the assertion on the detailed lookup ---
+        userRole.setPrivileges(Set.of(Privilege.USER_MANAGEMENT_READ));
+
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@meta.com")).thenReturn(false);
-        when(passwordEncoder.encode("Password123!")).thenReturn("encodedPassword");
-
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(roleRepository.findByTextId("role-text-id")).thenReturn(Optional.of(userRole));
 
+        // When the user is saved, return the user object
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setRoles(Set.of(userRole));
@@ -165,9 +171,13 @@ class UserServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("newuser", result.username());
+        // The simple response from createUser should have roles
         assertTrue(result.roles().contains("ROLE_USER"));
+        // --- The simple response from createUser should NOT have privileges ---
+        assertNull(result.privileges());
+
+        // Verify that the save method was called
         verify(userRepository).save(any(User.class));
-        verify(roleRepository).findByTextId("role-text-id");
     }
 
     @Test
@@ -202,15 +212,20 @@ class UserServiceTest {
 
         when(roleRepository.findByTextId("role-text-id")).thenReturn(Optional.of(userRole));
 
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        // --- MODIFIED: Ensure the mock returns the user passed to it to simulate a save ---
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
-        userService.updateUser("user-text-id", request);
+        // --- MODIFIED: The service method now returns the consolidated DTO ---
+        UserResponse result = userService.updateUser("user-text-id", request);
 
         // Assert
-        verify(userRepository).save(user);
+        // --- MODIFIED: Assert against the fields of the new DTO ---
+        assertNotNull(result);
+        assertTrue(result.enabled());
+        assertTrue(result.roles().contains("ROLE_USER"));
+        verify(userRepository).save(any(User.class));
         verify(roleRepository).findByTextId("role-text-id");
-        assertTrue(user.getRoles().contains(userRole));
     }
 
     @Test

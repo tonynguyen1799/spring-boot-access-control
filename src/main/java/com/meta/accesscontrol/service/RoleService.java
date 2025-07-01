@@ -79,9 +79,8 @@ public class RoleService {
             throw new IllegalStateException("Cannot delete a protected role: " + role.getName());
         }
 
-        long userCount = userRepository.countByRoleId(role.getId());
-        if (userCount > 0) {
-            throw new IllegalStateException("Cannot delete role: " + userCount + " user(s) are currently assigned to this role.");
+        if (userRepository.existsByRoles_TextId(role.getTextId())) {
+            throw new IllegalStateException("Cannot delete role: one or more users are currently assigned to this role.");
         }
 
         roleRepository.delete(role);

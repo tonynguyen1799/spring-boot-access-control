@@ -4,6 +4,7 @@ import com.meta.accesscontrol.config.JwtProperties;
 import com.meta.accesscontrol.security.services.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+@Getter
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -37,6 +39,43 @@ public class JwtUtils {
                 .compact();
     }
 
+    // --- This private helper method contains the consolidated validation logic ---
+    private boolean validateToken(String token, String tokenType) {
+        try {
+            Jwts.parser().verifyWith(key()).build().parse(token);
+            return true;
+        } catch (MalformedJwtException e) {
+            log.error("Invalid {}: {}", tokenType, e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.error("{} is expired: {}", tokenType, e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.error("{} is unsupported: {}", tokenType, e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("{} claims string is empty: {}", tokenType, e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean validateJwtToken(String authToken) {
+        return validateToken(authToken, "JWT token");
+    }
+
+    public boolean validateRefreshToken(String token) {
+        return validateToken(token, "Refresh token");
+    }
+
+    public String getUsernameClaim(String token) {
+        return Jwts.parser().verifyWith(key()).build()
+                .parseSignedClaims(token).getPayload().getSubject();
+    }
+
+    public String getUsernameFromRefreshToken(String token) {
+        return Jwts.parser().verifyWith(key()).build()
+                .parseSignedClaims(token).getPayload().getSubject();
+    }
+
+    // --- Other methods for token generation remain the same ---
+
     public String generateJwtToken(Authentication authentication) {
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
 
@@ -48,55 +87,6 @@ public class JwtUtils {
         claims.put("email", userPrincipal.getEmail());
         claims.put("authorities", authorities);
         return generateToken(claims, userPrincipal.getUsername(), jwtProperties.getExpirationMs());
-    }
-
-    public String getUsernameClaim(String token) {
-        return Jwts.parser().verifyWith(key()).build()
-                .parseSignedClaims(token).getPayload().getSubject();
-    }
-
-    public boolean validateJwtToken(String authToken) {
-        try {
-            Jwts.parser().verifyWith(key()).build().parse(authToken);
-            return true;
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-        }
-        return false;
-    }
-
-    public String generateRefreshToken(UserDetailsImpl userPrincipal) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("textId", userPrincipal.getTextId());
-        claims.put("email", userPrincipal.getEmail());
-        return generateToken(claims, userPrincipal.getUsername(), jwtProperties.getRefreshExpirationMs());
-    }
-
-    public boolean validateRefreshToken(String token) {
-        try {
-            Jwts.parser().verifyWith(key()).build().parse(token);
-            return true;
-        } catch (MalformedJwtException e) {
-            log.error("Invalid refresh token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.error("Refresh token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("Refresh token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("Refresh token claims string is empty: {}", e.getMessage());
-        }
-        return false;
-    }
-
-    public String getUsernameFromRefreshToken(String token) {
-        return Jwts.parser().verifyWith(key()).build()
-                .parseSignedClaims(token).getPayload().getSubject();
     }
 
     public String generateJwtToken(Authentication authentication, long expirationMs) {
@@ -118,7 +108,4 @@ public class JwtUtils {
         return generateToken(claims, userPrincipal.getUsername(), expirationMs);
     }
 
-    public JwtProperties getJwtProperties() {
-        return jwtProperties;
-    }
 }

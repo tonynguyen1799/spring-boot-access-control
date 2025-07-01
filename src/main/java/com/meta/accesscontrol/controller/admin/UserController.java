@@ -3,6 +3,7 @@ package com.meta.accesscontrol.controller.admin;
 import com.meta.accesscontrol.controller.admin.payload.*;
 import com.meta.accesscontrol.controller.payload.response.JsonResponse;
 import com.meta.accesscontrol.controller.payload.response.PaginationResponse;
+import com.meta.accesscontrol.controller.payload.response.UserResponse;
 import com.meta.accesscontrol.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

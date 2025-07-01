@@ -1,0 +1,451 @@
+{
+  "info": {
+    "_postman_id": "a8f3d1b2-c4e5-4f67-890a-12345abcdef",
+    "name": "Access Control API (Complete)",
+    "description": "A comprehensive collection for testing the Spring Boot Access Control System API.\n\n**Setup Instructions:**\n1. Import this file into Postman.\n2. In the collection variables, set the `baseUrl` to `http://localhost:8080`.\n3. Run the `[POST] Sign In` request with a valid user (e.g., `admin`/`password`) to automatically save the authentication tokens.\n4. All other protected requests will now use the saved `accessToken` automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "[POST] Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"accessToken\", response.data.token);",
+                  "    pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"password\",\n    \"rememberMe\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signin"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/auth/signin" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiJ9...\",\n        \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n        \"type\": \"Bearer\"\n    }\n}"
+            },
+            {
+              "name": "Invalid Credentials",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/auth/signin" } },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 401,\n    \"message\": \"Invalid username or password\",\n    \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "[POST] Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/auth/refresh" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Token refreshed\",\n    \"data\": {\n        \"token\": \"eyJhbGciOiJIUzI1NiJ9...\",\n        \"type\": \"Bearer\"\n    }\n}"
+            },
+            {
+              "name": "Invalid Refresh Token",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/auth/refresh" } },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 400,\n    \"message\": \"Invalid or expired refresh token\",\n    \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "[GET] Get Current User",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/me" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/auth/me" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"User details fetched successfully\",\n    \"data\": {\n        \"textId\": \"user-text-id-123\",\n        \"username\": \"admin\",\n        \"email\": \"admin@meta.com\",\n        \"enabled\": true,\n        \"roles\": [\"ROLE_ADMIN\"],\n        \"privileges\": [\"ROLE_MANAGEMENT_READ\", \"ROLE_MANAGEMENT_WRITE\", \"USER_MANAGEMENT_READ\", \"USER_MANAGEMENT_WRITE\"],\n        \"profile\": {\n            \"firstName\": \"Admin\",\n            \"lastName\": \"User\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[POST] Change Password",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"currentPassword\": \"password\",\n    \"newPassword\": \"newSecurePassword123\",\n    \"confirmPassword\": \"newSecurePassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/change-password" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/auth/change-password" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Password changed successfully!\",\n    \"data\": null\n}"
+            },
+            {
+              "name": "Incorrect Current Password",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/auth/change-password" } },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 400,\n    \"message\": \"Incorrect current password\",\n    \"data\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin - User Management",
+      "item": [
+        {
+          "name": "[GET] Get Users",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/users?page=0&size=10&sort=username,asc" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/users" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Users fetched successfully\",\n    \"data\": {\n        \"content\": [\n            {\n                \"textId\": \"user-text-id-123\",\n                \"username\": \"admin\",\n                \"email\": \"admin@meta.com\",\n                \"enabled\": true,\n                \"roles\": [\"ROLE_ADMIN\"]\n            }\n        ],\n        \"pageNumber\": 0,\n        \"pageSize\": 10,\n        \"totalElements\": 1,\n        \"totalPages\": 1,\n        \"isLast\": true\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[POST] Create User",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"newuser\",\n    \"email\": \"newuser@meta.com\",\n    \"roleTextIds\": [\n        \"<ROLE_USER_TEXT_ID>\"\n    ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/users" }
+          },
+          "response": [
+            {
+              "name": "Created",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/admin/users" } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 201,\n    \"message\": \"User created successfully\",\n    \"data\": {\n        \"textId\": \"new-user-text-id-789\",\n        \"username\": \"newuser\",\n        \"email\": \"newuser@meta.com\",\n        \"enabled\": true,\n        \"roles\": [\"ROLE_USER\"],\n        \"privileges\": null\n    }\n}"
+            },
+            {
+              "name": "Conflict - Username Exists",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/admin/users" } },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 409,\n    \"message\": \"Username is already taken!\",\n    \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "[GET] Get User Details",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/users/<USER_TEXT_ID>" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/users/<USER_TEXT_ID>" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"User details fetched successfully\",\n    \"data\": {\n        \"textId\": \"user-text-id-123\",\n        \"username\": \"admin\",\n        \"email\": \"admin@meta.com\",\n        \"enabled\": true,\n        \"roles\": [\"ROLE_ADMIN\"],\n        \"privileges\": [\"ROLE_MANAGEMENT_READ\", \"ROLE_MANAGEMENT_WRITE\", \"USER_MANAGEMENT_READ\", \"USER_MANAGEMENT_WRITE\"]\n    }\n}"
+            },
+            {
+              "name": "Not Found",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/users/non-existent-id" } },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 404,\n    \"message\": \"User not found with textId: non-existent-id\",\n    \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "[PUT] Update User",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"roleTextIds\": [\n        \"<ROLE_MODERATOR_TEXT_ID>\"\n    ],\n    \"enabled\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/users/<USER_TEXT_ID>" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/admin/users/<USER_TEXT_ID>" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"User updated successfully\",\n    \"data\": {\n        \"textId\": \"user-text-id-456\",\n        \"username\": \"mod\",\n        \"enabled\": false,\n        \"roles\": [\"ROLE_MODERATOR\"],\n        \"privileges\": null\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[DELETE] Delete User",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/admin/users/<USER_TEXT_ID>" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/admin/users/<USER_TEXT_ID>" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"User deleted successfully\",\n    \"data\": null\n}"
+            },
+            {
+              "name": "Bad Request - Cannot Delete Self",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/admin/users/<ADMIN_USER_TEXT_ID>" } },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 400,\n    \"message\": \"You cannot delete your own account.\",\n    \"data\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin - Access Control",
+      "item": [
+        {
+          "name": "[GET] Get Roles",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Roles fetched successfully\",\n    \"data\": [\n        {\n            \"textId\": \"role-text-id-abc\",\n            \"name\": \"ROLE_ADMIN\",\n            \"privileges\": [\"ROLE_MANAGEMENT_READ\", \"ROLE_MANAGEMENT_WRITE\", \"USER_MANAGEMENT_READ\", \"USER_MANAGEMENT_WRITE\"]\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "[POST] Create Role",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"ROLE_SUPPORT\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles" }
+          },
+          "response": [
+            {
+              "name": "Created",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles" } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 201,\n    \"message\": \"Role created successfully\",\n    \"data\": {\n        \"textId\": \"new-role-text-id-xyz\",\n        \"name\": \"ROLE_SUPPORT\",\n        \"privileges\": []\n    }\n}"
+            },
+            {
+              "name": "Conflict - Role Exists",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles" } },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 409,\n    \"message\": \"Role with name 'ROLE_ADMIN' already exists.\",\n    \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "[GET] Get Role Details",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/<ROLE_TEXT_ID>" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/<ROLE_TEXT_ID>" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Role fetched successfully\",\n    \"data\": {\n        \"textId\": \"role-text-id-abc\",\n        \"name\": \"ROLE_ADMIN\",\n        \"privileges\": [\"ROLE_MANAGEMENT_READ\", \"ROLE_MANAGEMENT_WRITE\", \"USER_MANAGEMENT_READ\", \"USER_MANAGEMENT_WRITE\"]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[PUT] Update Role",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"ROLE_NEW_NAME\",\n    \"privileges\": [\n        \"USER_MANAGEMENT_READ\"\n    ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/<ROLE_TEXT_ID>" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/<ROLE_TEXT_ID>" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Role updated successfully\",\n    \"data\": {\n        \"textId\": \"role-text-id-xyz\",\n        \"name\": \"ROLE_NEW_NAME\",\n        \"privileges\": [\"USER_MANAGEMENT_READ\"]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[DELETE] Delete Role",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/<ROLE_TEXT_ID>" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/some-role-id" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Role deleted successfully\",\n    \"data\": null\n}"
+            },
+            {
+              "name": "Conflict - Role in Use",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/admin/access-control/roles/some-role-id" } },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 409,\n    \"message\": \"Cannot delete role: one or more users are currently assigned to this role.\",\n    \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "[GET] Get Privileges",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/access-control/privileges" }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/admin/access-control/privileges" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"status\": 200,\n    \"message\": \"Privileges fetched successfully\",\n    \"data\": [\n        {\n            \"name\": \"ROLE_MANAGEMENT_READ\",\n            \"description\": \"Allows viewing roles and permissions\"\n        },\n        {\n            \"name\": \"ROLE_MANAGEMENT_WRITE\",\n            \"description\": \"Allows creating, updating, and deleting roles\"\n        },\n        {\n            \"name\": \"USER_MANAGEMENT_READ\",\n            \"description\": \"Allows viewing users\"\n        },\n        {\n            \"name\": \"USER_MANAGEMENT_WRITE\",\n            \"description\": \"Allows creating users and managing their roles and status\"\n        }\n    ]\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ]
+}
