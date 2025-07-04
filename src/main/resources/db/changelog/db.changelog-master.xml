@@ -11,5 +11,6 @@
     <include file="004-add-user-updated-at-index.xml" relativeToChangelogFile="true"/>
     <include file="006-create-user-profiles-table.xml" relativeToChangelogFile="true"/>
     <include file="007-add-user-profiles-for-initial-users.xml" relativeToChangelogFile="true"/>
+    <include file="008-add-role-description.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

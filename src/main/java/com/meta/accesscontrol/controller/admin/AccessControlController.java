@@ -37,7 +37,7 @@ public class AccessControlController {
     }
 
     @PostMapping("/roles")
-    @ResponseStatus(HttpStatus.CREATED) // Use annotation to set status code for created resources
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('ROLE_MANAGEMENT_WRITE')")
     public JsonResponse<RoleResponse> createRole(@Valid @RequestBody CreateRoleRequest request) {
         RoleResponse newRole = roleService.createRole(request);

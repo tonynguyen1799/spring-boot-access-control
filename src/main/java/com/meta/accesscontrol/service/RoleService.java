@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -31,14 +30,14 @@ public class RoleService {
     @Transactional(readOnly = true)
     public List<RoleResponse> getRoles() {
         return roleRepository.findAll().stream()
-                .map(RoleResponse::fromRole) // Reverted to simple mapping
+                .map(RoleResponse::fromRole)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public RoleResponse getRole(String textId) {
         Role role = findRoleByTextId(textId);
-        return RoleResponse.fromRole(role); // Reverted to simple mapping
+        return RoleResponse.fromRole(role);
     }
 
     @Transactional
@@ -46,8 +45,8 @@ public class RoleService {
         validateRoleName(request.name(), null);
 
         Role newRole = new Role(request.name());
-        newRole.setDescription(request.description()); // Reverted
-        newRole.setPrivileges(new HashSet<>());
+        newRole.setDescription(request.description());
+        newRole.setPrivileges(request.privileges());
         Role savedRole = roleRepository.save(newRole);
         return RoleResponse.fromRole(savedRole);
     }
@@ -65,7 +64,7 @@ public class RoleService {
         }
 
         if (request.description() != null) {
-            role.setDescription(request.description()); // Reverted
+            role.setDescription(request.description());
         }
 
         if (Objects.nonNull(request.privileges())) {
@@ -99,8 +98,7 @@ public class RoleService {
     private void validateRoleName(String name, Role existingRole) {
         roleRepository.findByName(name)
                 .ifPresent(role -> {
-                    // If we are updating a role, we need to make sure the found role is not the same one.
-                    if (existingRole == null || !role.getId().equals(existingRole.getId())) {
+                    if (Objects.nonNull(existingRole) || !role.getId().equals(existingRole.getId())) {
                         throw new DuplicateResourceException("Role with name '" + name + "' already exists.");
                     }
                 });
