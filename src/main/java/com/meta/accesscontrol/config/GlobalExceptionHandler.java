@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // --- Add this new handler for authentication failures ---
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<JsonResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
         log.warn("Authentication failed: {}", ex.getMessage());

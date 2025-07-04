@@ -9,12 +9,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 public class JwtProperties {
     private String secret;
-    // Maps to app.jwt.expiration-ms
     private long expirationMs;
-    // Maps to app.jwt.refresh-expiration-ms
     private long refreshExpirationMs;
-    // Maps to app.jwt.long-expiration-ms
     private long longExpirationMs;
-    // Maps to app.jwt.long-refresh-expiration-ms
     private long longRefreshExpirationMs;
 }

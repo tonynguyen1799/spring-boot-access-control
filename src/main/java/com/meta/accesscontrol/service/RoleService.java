@@ -98,7 +98,7 @@ public class RoleService {
     private void validateRoleName(String name, Role existingRole) {
         roleRepository.findByName(name)
                 .ifPresent(role -> {
-                    if (Objects.nonNull(existingRole) || !role.getId().equals(existingRole.getId())) {
+                    if (Objects.isNull(existingRole) || !role.getId().equals(existingRole.getId())) {
                         throw new DuplicateResourceException("Role with name '" + name + "' already exists.");
                     }
                 });
